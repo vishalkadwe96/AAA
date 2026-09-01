@@ -15,6 +15,8 @@ Watch the complete project walkthrough and demo here:
 ## Live video 
 https://drive.google.com/file/d/1VBz-srUY4y6wOSi7zYcMu4iw0pVoTUTv/view?usp=sharing
 ---
+## live video:
+https://drive.google.com/file/d/1Ugo9zlkTDs8Osm8A50L2QeirKi6RCe5y/view?usp=sharing
 
 ## Objective
 Build an NLP binary classifier that distinguishes spam emails from legitimate (ham) emails using text preprocessing, TF-IDF feature extraction, and machine learning algorithms.
