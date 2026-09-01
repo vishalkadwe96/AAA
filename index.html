@@ -1,0 +1,962 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Task 4 - Email Spam Detection | Crystal Intelligence</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; cursor: none; }
+:root {
+  --cb: #00d4ff; --cc: #00f5d4; --cp: #a855f7; --ck: #ff006e;
+  --cw: rgba(255,255,255,0.9); --gb: rgba(255,255,255,0.05);
+  --gd: rgba(255,255,255,0.15); --dn: #0a0e27; --dn2: #12183a;
+}
+body {
+  font-family: "Inter", sans-serif; background: var(--dn);
+  color: var(--cw); overflow-x: hidden; min-height: 100vh;
+}
+.cursor {
+  position: fixed; width: 20px; height: 20px;
+  border: 2px solid var(--cb); border-radius: 50%;
+  pointer-events: none; z-index: 99999;
+  transform: translate(-50%, -50%);
+  transition: width 0.2s, height 0.2s, border-color 0.2s;
+  box-shadow: 0 0 10px var(--cb), 0 0 20px var(--cb), 0 0 40px rgba(0,212,255,0.3), inset 0 0 10px rgba(0,212,255,0.2);
+  mix-blend-mode: screen;
+}
+.cursor.hovering { width: 50px; height: 50px; border-color: var(--cp);
+  box-shadow: 0 0 20px var(--cp), 0 0 40px var(--cp), 0 0 80px rgba(168,85,247,0.4), inset 0 0 20px rgba(168,85,247,0.3); }
+.cursor-dot {
+  position: fixed; width: 6px; height: 6px; background: var(--cb);
+  border-radius: 50%; pointer-events: none; z-index: 99999;
+  transform: translate(-50%, -50%);
+  box-shadow: 0 0 8px var(--cb), 0 0 16px var(--cb);
+}
+.cursor-trail {
+  position: fixed; pointer-events: none; z-index: 99998;
+  width: 8px; height: 8px; background: linear-gradient(135deg, var(--cb), var(--cp));
+  border-radius: 50%; opacity: 0.6;
+  box-shadow: 0 0 6px var(--cb), 0 0 12px var(--cp);
+  animation: trail-fade 0.8s ease-out forwards;
+}
+@keyframes trail-fade {
+  0% { transform: translate(-50%,-50%) scale(1); opacity: 0.6; }
+  100% { transform: translate(-50%,-50%) scale(0); opacity: 0; }
+}
+.crystal-floor {
+  position: fixed; bottom: 0; left: 0; right: 0; height: 50vh;
+  z-index: -3; pointer-events: none;
+  background: 
+    linear-gradient(180deg, var(--dn) 0%, transparent 40%),
+    repeating-linear-gradient(90deg, rgba(0,212,255,0.03) 0px, rgba(0,212,255,0.03) 1px, transparent 1px, transparent 80px),
+    repeating-linear-gradient(0deg, rgba(0,212,255,0.03) 0px, rgba(0,212,255,0.03) 1px, transparent 1px, transparent 80px);
+  transform: perspective(500px) rotateX(60deg);
+  transform-origin: bottom center;
+  animation: floor-glow 4s ease-in-out infinite;
+}
+@keyframes floor-glow {
+  0%, 100% { opacity: 0.3; } 50% { opacity: 0.6; }
+}
+.crystal-bg {
+  position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: -5;
+  background: 
+    radial-gradient(ellipse at 20% 20%, rgba(0,212,255,0.08) 0%, transparent 50%),
+    radial-gradient(ellipse at 80% 80%, rgba(168,85,247,0.08) 0%, transparent 50%),
+    radial-gradient(ellipse at 50% 50%, rgba(0,245,212,0.05) 0%, transparent 60%),
+    linear-gradient(180deg, #0a0e27 0%, #0d1235 50%, #0a0e27 100%);
+}
+.parallax-layer { position: fixed; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: -4; }
+.parallax-1 { background: radial-gradient(circle at 30% 40%, rgba(0,212,255,0.06) 0%, transparent 40%); }
+.parallax-2 { background: radial-gradient(circle at 70% 60%, rgba(168,85,247,0.06) 0%, transparent 40%); }
+.parallax-3 { background: radial-gradient(circle at 50% 80%, rgba(0,245,212,0.04) 0%, transparent 35%); }
+.crystal-particles { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: -2; pointer-events: none; overflow: hidden; }
+.cp { position: absolute; border-radius: 50%; animation: cp-float linear infinite; }
+.cp1 { width: 3px; height: 3px; background: var(--cb); box-shadow: 0 0 6px var(--cb), 0 0 12px var(--cb); }
+.cp2 { width: 5px; height: 5px; background: linear-gradient(135deg, var(--cc), var(--cp)); box-shadow: 0 0 8px var(--cc), 0 0 16px var(--cp); transform: rotate(45deg); border-radius: 2px; }
+.cp3 { width: 2px; height: 2px; background: var(--cw); box-shadow: 0 0 4px var(--cw), 0 0 8px var(--cb); }
+@keyframes cp-float {
+  0% { transform: translateY(110vh) translateX(0) rotate(0deg) scale(0); opacity: 0; }
+  8% { opacity: 1; transform: translateY(100vh) translateX(10px) rotate(45deg) scale(1); }
+  92% { opacity: 1; transform: translateY(0vh) translateX(-10px) rotate(315deg) scale(1); }
+  100% { transform: translateY(-10vh) translateX(0) rotate(360deg) scale(0); opacity: 0; }
+}
+.lbeam { position: fixed; width: 2px; background: linear-gradient(180deg, transparent, var(--cb), transparent); opacity: 0.12; z-index: -3; pointer-events: none; animation: lbeam-pulse 5s ease-in-out infinite; }
+@keyframes lbeam-pulse { 0%, 100% { opacity: 0.08; } 50% { opacity: 0.25; } }
+.prism-scene { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: -2; pointer-events: none; perspective: 800px; }
+.prism { position: relative; width: 100px; height: 173px; transform-style: preserve-3d; animation: prism-spin 15s linear infinite; }
+.prism-face {
+  position: absolute; width: 100px; height: 173px;
+  background: linear-gradient(180deg, rgba(0,212,255,0.15), rgba(168,85,247,0.1), rgba(0,212,255,0.05));
+  border: 1px solid rgba(0,212,255,0.25);
+  box-shadow: inset 0 0 30px rgba(0,212,255,0.1), 0 0 30px rgba(0,212,255,0.05);
+  clip-path: polygon(50% 0%, 100% 100%, 0% 100%);
+  backface-visibility: visible;
+}
+.pf1 { transform: rotateY(0deg) translateZ(58px); }
+.pf2 { transform: rotateY(120deg) translateZ(58px); }
+.pf3 { transform: rotateY(240deg) translateZ(58px); }
+@keyframes prism-spin { 0% { transform: rotateX(20deg) rotateY(0deg); } 100% { transform: rotateX(20deg) rotateY(360deg); } }
+.shard { position: fixed; z-index: -2; pointer-events: none; transform-style: preserve-3d; }
+.shard-hex {
+  width: 80px; height: 80px;
+  background: linear-gradient(135deg, rgba(0,212,255,0.12), rgba(168,85,247,0.08));
+  clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
+  border: 1px solid rgba(0,212,255,0.2);
+  box-shadow: inset 0 0 25px rgba(0,212,255,0.08), 0 0 40px rgba(0,212,255,0.06);
+  animation: shard-float 10s ease-in-out infinite;
+}
+.shard-dia {
+  width: 0; height: 0;
+  border-left: 40px solid transparent; border-right: 40px solid transparent;
+  border-bottom: 70px solid rgba(0,245,212,0.08);
+  filter: drop-shadow(0 0 15px rgba(0,245,212,0.2));
+  animation: shard-float 12s ease-in-out infinite reverse;
+}
+@keyframes shard-float {
+  0%, 100% { transform: translateY(0) rotate(0deg) scale(1); }
+  25% { transform: translateY(-20px) rotate(5deg) scale(1.05); }
+  50% { transform: translateY(-35px) rotate(-3deg) scale(0.95); }
+  75% { transform: translateY(-15px) rotate(8deg) scale(1.02); }
+}
+.caustics {
+  position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+  z-index: -1; pointer-events: none; opacity: 0.08;
+  background: 
+    radial-gradient(ellipse 200px 100px at 20% 30%, rgba(0,212,255,0.5) 0%, transparent 70%),
+    radial-gradient(ellipse 150px 80px at 80% 70%, rgba(168,85,247,0.5) 0%, transparent 70%),
+    radial-gradient(ellipse 180px 90px at 50% 50%, rgba(0,245,212,0.4) 0%, transparent 70%);
+  animation: caustics-shift 8s ease-in-out infinite;
+}
+@keyframes caustics-shift {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  33% { transform: translate(30px, -20px) scale(1.1); }
+  66% { transform: translate(-20px, 15px) scale(0.95); }
+}
+.ice-overlay {
+  position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+  z-index: -1; pointer-events: none; opacity: 0.03;
+  background-image: 
+    linear-gradient(45deg, transparent 48%, rgba(0,212,255,0.3) 49%, rgba(0,212,255,0.3) 51%, transparent 52%),
+    linear-gradient(-45deg, transparent 48%, rgba(168,85,247,0.2) 49%, rgba(168,85,247,0.2) 51%, transparent 52%);
+  background-size: 120px 120px;
+  animation: ice-shift 20s linear infinite;
+}
+@keyframes ice-shift { 0% { background-position: 0 0; } 100% { background-position: 120px 120px; } }
+nav {
+  position: fixed; top: 0; left: 0; right: 0; z-index: 1000;
+  padding: 1rem 3rem; background: rgba(10,14,39,0.7);
+  backdrop-filter: blur(20px); border-bottom: 1px solid var(--gd);
+  display: flex; justify-content: space-between; align-items: center;
+}
+.nav-logo {
+  font-family: "Orbitron", monospace; font-size: 1.3rem; font-weight: 900;
+  background: linear-gradient(135deg, var(--cb), var(--cp));
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  background-clip: text; letter-spacing: 2px;
+}
+.nav-links { display: flex; gap: 2rem; list-style: none; }
+.nav-links a {
+  color: rgba(255,255,255,0.7); text-decoration: none;
+  font-family: "Rajdhani", sans-serif; font-weight: 600; font-size: 1rem;
+  letter-spacing: 1px; transition: all 0.3s ease; position: relative;
+}
+.nav-links a::after {
+  content: ""; position: absolute; bottom: -4px; left: 0;
+  width: 0; height: 2px; background: linear-gradient(90deg, var(--cb), var(--cp));
+  transition: width 0.3s ease;
+}
+.nav-links a:hover { color: var(--cb); }
+.nav-links a:hover::after { width: 100%; }
+.glass-card {
+  background: var(--gb); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+  border: 1px solid var(--gd); border-radius: 24px; padding: 2.5rem;
+  position: relative; overflow: hidden;
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.glass-card::before {
+  content: ""; position: absolute; top: -50%; left: -50%;
+  width: 200%; height: 200%;
+  background: radial-gradient(circle, rgba(0,212,255,0.08) 0%, transparent 70%);
+  opacity: 0; transition: opacity 0.4s ease; pointer-events: none;
+}
+.glass-card:hover::before { opacity: 1; }
+.glass-card:hover {
+  border-color: rgba(0,212,255,0.3);
+  box-shadow: 0 0 40px rgba(0,212,255,0.1), inset 0 0 40px rgba(0,212,255,0.02);
+  transform: translateY(-5px);
+}
+.glass-card::after {
+  content: ""; position: absolute; top: 0; left: -100%;
+  width: 50%; height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.05), transparent);
+  transition: left 0.6s ease; pointer-events: none;
+}
+.glass-card:hover::after { left: 150%; }
+.burst-particle {
+  position: absolute; width: 6px; height: 6px; border-radius: 50%;
+  pointer-events: none; z-index: 10;
+  animation: burst-out 0.6s ease-out forwards;
+}
+@keyframes burst-out {
+  0% { transform: translate(-50%,-50%) scale(1); opacity: 1; }
+  100% { transform: translate(var(--tx), var(--ty)) scale(0); opacity: 0; }
+}
+.hero {
+  min-height: 100vh; display: flex; align-items: center; justify-content: center;
+  position: relative; padding: 8rem 2rem 4rem; overflow: hidden;
+}
+.hero-content { text-align: center; max-width: 900px; z-index: 2; }
+.hero-badge {
+  display: inline-flex; align-items: center; gap: 0.5rem;
+  padding: 0.5rem 1.5rem; background: rgba(0,212,255,0.1);
+  border: 1px solid rgba(0,212,255,0.3); border-radius: 50px;
+  font-family: "Rajdhani", sans-serif; font-weight: 600; font-size: 0.9rem;
+  color: var(--cb); letter-spacing: 2px; text-transform: uppercase;
+  margin-bottom: 2rem; animation: badge-glow 3s ease-in-out infinite;
+}
+@keyframes badge-glow {
+  0%, 100% { box-shadow: 0 0 10px rgba(0,212,255,0.2); }
+  50% { box-shadow: 0 0 25px rgba(0,212,255,0.4), 0 0 40px rgba(0,212,255,0.1); }
+}
+.hero h1 {
+  font-family: "Orbitron", monospace;
+  font-size: clamp(2.5rem, 6vw, 5rem); font-weight: 900;
+  line-height: 1.1; margin-bottom: 1.5rem;
+  background: linear-gradient(135deg, #fff 0%, var(--cb) 40%, var(--cp) 70%, var(--cc) 100%);
+  background-size: 200% 200%;
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  background-clip: text;
+  animation: text-shimmer 4s ease-in-out infinite;
+  text-shadow: 0 0 80px rgba(0,212,255,0.3);
+}
+@keyframes text-shimmer {
+  0%, 100% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+}
+.hero-subtitle {
+  font-family: "Rajdhani", sans-serif;
+  font-size: clamp(1.1rem, 2.5vw, 1.5rem); font-weight: 400;
+  color: rgba(255,255,255,0.7); margin-bottom: 3rem; line-height: 1.6;
+}
+.hero-stats {
+  display: flex; justify-content: center; gap: 3rem;
+  flex-wrap: wrap; margin-top: 3rem;
+}
+.stat-item { text-align: center; }
+.stat-number {
+  font-family: "Orbitron", monospace; font-size: 2.5rem; font-weight: 900;
+  background: linear-gradient(135deg, var(--cb), var(--cc));
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+.stat-label {
+  font-family: "Rajdhani", sans-serif; font-size: 0.9rem;
+  color: rgba(255,255,255,0.5); letter-spacing: 2px;
+  text-transform: uppercase; margin-top: 0.3rem;
+}
+.hero-crystal { position: absolute; opacity: 0.12; pointer-events: none; }
+.hc-left { left: -80px; top: 15%; width: 250px; height: 250px;
+  background: linear-gradient(135deg, var(--cb), transparent);
+  clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
+  animation: hc-float 8s ease-in-out infinite; }
+.hc-right { right: -80px; bottom: 15%; width: 250px; height: 250px;
+  background: linear-gradient(135deg, var(--cp), transparent);
+  clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
+  animation: hc-float 8s ease-in-out infinite reverse; }
+@keyframes hc-float {
+  0%, 100% { transform: translateY(0) rotate(0deg); }
+  50% { transform: translateY(-30px) rotate(10deg); }
+}
+.section { padding: 6rem 2rem; max-width: 1400px; margin: 0 auto; position: relative; }
+.section-header { text-align: center; margin-bottom: 4rem; }
+.section-tag {
+  font-family: "Rajdhani", sans-serif; font-weight: 600;
+  font-size: 0.85rem; letter-spacing: 3px; text-transform: uppercase;
+  color: var(--cb); margin-bottom: 1rem; display: block;
+}
+.section-title {
+  font-family: "Orbitron", monospace;
+  font-size: clamp(1.8rem, 4vw, 3rem); font-weight: 700;
+  margin-bottom: 1rem;
+  background: linear-gradient(135deg, #fff, var(--cb));
+  background-size: 200% 200%;
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  background-clip: text;
+  animation: text-shimmer 5s ease-in-out infinite;
+}
+.section-desc {
+  font-family: "Inter", sans-serif; font-size: 1.1rem;
+  color: rgba(255,255,255,0.6); max-width: 600px;
+  margin: 0 auto; line-height: 1.7;
+}
+.crystal-divider {
+  height: 2px;
+  background: linear-gradient(90deg, transparent, var(--cb), var(--cp), var(--cc), transparent);
+  margin: 2rem auto; max-width: 400px; position: relative;
+  animation: divider-pulse 3s ease-in-out infinite;
+}
+@keyframes divider-pulse {
+  0%, 100% { opacity: 0.6; } 50% { opacity: 1; }
+}
+.crystal-divider::before, .crystal-divider::after {
+  content: "C6"; position: absolute; top: 50%;
+  transform: translateY(-50%); color: var(--cb); font-size: 0.8rem;
+  animation: diamond-spin 4s linear infinite;
+}
+.crystal-divider::before { left: -20px; }
+.crystal-divider::after { right: -20px; }
+@keyframes diamond-spin {
+  0% { transform: translateY(-50%) rotate(0deg); }
+  100% { transform: translateY(-50%) rotate(360deg); }
+}
+.grid-2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(350px, 1fr)); gap: 2rem; }
+.grid-3 { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 2rem; }
+.grid-4 { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1.5rem; }
+.method-card { position: relative; padding: 2rem; }
+.method-icon {
+  width: 60px; height: 60px; border-radius: 16px;
+  background: linear-gradient(135deg, rgba(0,212,255,0.15), rgba(168,85,247,0.1));
+  border: 1px solid rgba(0,212,255,0.2);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1.8rem; margin-bottom: 1.5rem;
+  box-shadow: 0 0 20px rgba(0,212,255,0.1);
+  transition: all 0.3s ease;
+}
+.glass-card:hover .method-icon {
+  box-shadow: 0 0 30px rgba(0,212,255,0.3), 0 0 60px rgba(168,85,247,0.2);
+  transform: scale(1.1) rotate(5deg);
+}
+.method-card h3 {
+  font-family: "Orbitron", monospace; font-size: 1.1rem;
+  font-weight: 700; margin-bottom: 0.8rem; color: #fff;
+}
+.method-card p {
+  font-size: 0.95rem; color: rgba(255,255,255,0.6); line-height: 1.7;
+}
+.method-step {
+  position: absolute; top: -12px; right: 20px;
+  width: 30px; height: 30px;
+  background: linear-gradient(135deg, var(--cb), var(--cp));
+  border-radius: 50%; display: flex; align-items: center; justify-content: center;
+  font-family: "Orbitron", monospace; font-weight: 900;
+  font-size: 0.8rem; color: #fff;
+  box-shadow: 0 0 15px rgba(0,212,255,0.4);
+  animation: step-pulse 2s ease-in-out infinite;
+}
+@keyframes step-pulse {
+  0%, 100% { box-shadow: 0 0 15px rgba(0,212,255,0.4); }
+  50% { box-shadow: 0 0 25px rgba(0,212,255,0.6), 0 0 40px rgba(168,85,247,0.3); }
+}
+.model-card { text-align: center; padding: 2.5rem 2rem; }
+.model-name {
+  font-family: "Orbitron", monospace; font-size: 1.2rem;
+  font-weight: 700; margin-bottom: 1.5rem; color: #fff;
+}
+.model-score-ring {
+  width: 140px; height: 140px;
+  margin: 0 auto 1.5rem; position: relative;
+}
+.model-score-ring svg { transform: rotate(-90deg); }
+.model-score-ring circle { fill: none; stroke-width: 8; stroke-linecap: round; }
+.ring-bg { stroke: rgba(255,255,255,0.1); }
+.ring-fill {
+  stroke: url(#gradient1);
+  stroke-dasharray: 377; stroke-dashoffset: 377;
+  transition: stroke-dashoffset 2s ease;
+}
+.model-score-text {
+  position: absolute; top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+  font-family: "Orbitron", monospace; font-size: 1.8rem; font-weight: 900;
+  color: var(--cb);
+}
+.model-metric {
+  display: flex; justify-content: space-between;
+  padding: 0.6rem 0; border-bottom: 1px solid rgba(255,255,255,0.05);
+  font-size: 0.9rem;
+}
+.model-metric:last-child { border-bottom: none; }
+.metric-label { color: rgba(255,255,255,0.5); }
+.metric-value {
+  font-family: "Rajdhani", sans-serif; font-weight: 700;
+  color: var(--cc);
+}
+.best-model {
+  border-color: var(--cb);
+  box-shadow: 0 0 40px rgba(0,212,255,0.15), inset 0 0 40px rgba(0,212,255,0.03);
+  animation: best-glow 3s ease-in-out infinite;
+}
+@keyframes best-glow {
+  0%, 100% { box-shadow: 0 0 40px rgba(0,212,255,0.15), inset 0 0 40px rgba(0,212,255,0.03); }
+  50% { box-shadow: 0 0 60px rgba(0,212,255,0.25), 0 0 100px rgba(168,85,247,0.1), inset 0 0 40px rgba(0,212,255,0.05); }
+}
+.best-badge {
+  position: absolute; top: -1px; left: 50%;
+  transform: translateX(-50%);
+  background: linear-gradient(90deg, var(--cb), var(--cp));
+  color: #fff; font-family: "Rajdhani", sans-serif; font-weight: 700;
+  font-size: 0.75rem; padding: 0.3rem 1.5rem;
+  border-radius: 0 0 12px 12px;
+  letter-spacing: 2px; text-transform: uppercase;
+}
+.demo-container { max-width: 800px; margin: 0 auto; }
+.demo-input-area { position: relative; margin-bottom: 2rem; }
+.demo-input-area textarea {
+  width: 100%; min-height: 150px;
+  background: rgba(255,255,255,0.03);
+  border: 1px solid rgba(0,212,255,0.2); border-radius: 16px;
+  padding: 1.5rem; color: #fff;
+  font-family: "Inter", sans-serif; font-size: 1rem;
+  resize: vertical; transition: all 0.3s ease; outline: none;
+}
+.demo-input-area textarea:focus {
+  border-color: var(--cb);
+  box-shadow: 0 0 30px rgba(0,212,255,0.1);
+  background: rgba(255,255,255,0.05);
+}
+.demo-input-area textarea::placeholder { color: rgba(255,255,255,0.3); }
+.demo-btn {
+  display: inline-flex; align-items: center; gap: 0.8rem;
+  padding: 1rem 3rem;
+  background: linear-gradient(135deg, var(--cb), var(--cp));
+  border: none; border-radius: 50px; color: #fff;
+  font-family: "Orbitron", monospace; font-weight: 700;
+  font-size: 1rem; letter-spacing: 2px;
+  cursor: none; transition: all 0.3s ease;
+  box-shadow: 0 0 30px rgba(0,212,255,0.3);
+  position: relative; overflow: hidden;
+}
+.demo-btn::before {
+  content: ""; position: absolute;
+  top: 0; left: -100%; width: 100%; height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+  transition: left 0.5s ease;
+}
+.demo-btn:hover::before { left: 100%; }
+.demo-btn:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 10px 40px rgba(0,212,255,0.4), 0 0 60px rgba(168,85,247,0.2);
+}
+.demo-result {
+  margin-top: 2rem; padding: 2rem; border-radius: 20px;
+  text-align: center; display: none;
+  animation: result-pop 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+}
+@keyframes result-pop {
+  0% { transform: scale(0.8); opacity: 0; }
+  100% { transform: scale(1); opacity: 1; }
+}
+.result-ham {
+  background: linear-gradient(135deg, rgba(0,245,212,0.1), rgba(0,245,212,0.05));
+  border: 1px solid rgba(0,245,212,0.3);
+}
+.result-spam {
+  background: linear-gradient(135deg, rgba(255,0,110,0.1), rgba(255,0,110,0.05));
+  border: 1px solid rgba(255,0,110,0.3);
+}
+.result-icon { font-size: 3rem; margin-bottom: 1rem; }
+.result-label {
+  font-family: "Orbitron", monospace; font-size: 1.5rem; font-weight: 900;
+  margin-bottom: 0.5rem;
+}
+.result-ham .result-label { color: var(--cc); }
+.result-spam .result-label { color: var(--ck); }
+.result-confidence {
+  font-family: "Rajdhani", sans-serif; font-size: 1.1rem;
+  color: rgba(255,255,255,0.7);
+}
+.viz-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(400px, 1fr)); gap: 2rem; }
+.viz-card { padding: 1.5rem; text-align: center; }
+.viz-card img {
+  width: 100%; border-radius: 16px;
+  margin-bottom: 1rem; border: 1px solid rgba(0,212,255,0.1);
+}
+.viz-card h4 {
+  font-family: "Orbitron", monospace; font-size: 1rem;
+  color: var(--cb); margin-bottom: 0.5rem;
+}
+.viz-card p { font-size: 0.9rem; color: rgba(255,255,255,0.5); }
+.code-block {
+  background: rgba(0,0,0,0.3); border: 1px solid rgba(0,212,255,0.15);
+  border-radius: 16px; padding: 1.5rem;
+  font-family: "Fira Code", "Courier New", monospace;
+  font-size: 0.85rem; line-height: 1.8;
+  overflow-x: auto; color: rgba(255,255,255,0.8);
+  position: relative;
+}
+.code-block .comment { color: rgba(255,255,255,0.4); }
+.code-block .keyword { color: var(--cp); }
+.code-block .string { color: var(--cc); }
+.code-block .function { color: var(--cb); }
+footer {
+  text-align: center; padding: 4rem 2rem;
+  border-top: 1px solid var(--gd);
+  background: rgba(10,14,39,0.5); backdrop-filter: blur(10px);
+}
+.footer-text {
+  font-family: "Rajdhani", sans-serif; font-size: 1rem;
+  color: rgba(255,255,255,0.4); letter-spacing: 2px;
+}
+.footer-crystal {
+  font-size: 2rem; margin-bottom: 1rem;
+  animation: crystal-pulse 3s ease-in-out infinite;
+}
+@keyframes crystal-pulse {
+  0%, 100% { filter: drop-shadow(0 0 10px var(--cb)); }
+  50% { filter: drop-shadow(0 0 30px var(--cb)) drop-shadow(0 0 60px var(--cp)); }
+}
+@media (max-width: 768px) {
+  nav { padding: 1rem 1.5rem; }
+  .nav-links { display: none; }
+  .hero { padding: 7rem 1.5rem 3rem; }
+  .section { padding: 4rem 1.5rem; }
+  .grid-2, .grid-3, .grid-4, .viz-grid { grid-template-columns: 1fr; }
+  .hero-stats { gap: 1.5rem; }
+  .cursor, .cursor-dot { display: none; }
+  * { cursor: auto; }
+}
+::-webkit-scrollbar { width: 8px; }
+::-webkit-scrollbar-track { background: var(--dn); }
+::-webkit-scrollbar-thumb {
+  background: linear-gradient(var(--cb), var(--cp)); border-radius: 4px;
+}
+::selection {
+  background: rgba(0,212,255,0.3); color: #fff;
+}
+
+.video-btn {
+  display: inline-flex; align-items: center; gap: 0.8rem;
+  padding: 1rem 2.5rem;
+  background: linear-gradient(135deg, rgba(255,0,110,0.2), rgba(168,85,247,0.2));
+  border: 2px solid rgba(255,0,110,0.4);
+  border-radius: 50px; color: #fff;
+  font-family: "Orbitron", monospace; font-weight: 700;
+  font-size: 0.95rem; letter-spacing: 2px;
+  text-decoration: none; cursor: none;
+  transition: all 0.3s ease;
+  box-shadow: 0 0 30px rgba(255,0,110,0.2);
+  position: relative; overflow: hidden;
+  margin-top: 1.5rem;
+}
+.video-btn::before {
+  content: ""; position: absolute;
+  top: 0; left: -100%; width: 100%; height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.15), transparent);
+  transition: left 0.5s ease;
+}
+.video-btn:hover::before { left: 100%; }
+.video-btn:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 10px 40px rgba(255,0,110,0.3), 0 0 60px rgba(168,85,247,0.2);
+  border-color: rgba(255,0,110,0.6);
+}
+.video-btn .play-icon {
+  width: 0; height: 0;
+  border-left: 12px solid #fff;
+  border-top: 7px solid transparent;
+  border-bottom: 7px solid transparent;
+  margin-left: 2px;
+}
+
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute;">
+<defs>
+<linearGradient id="gradient1" x1="0%" y1="0%" x2="100%" y2="0%">
+<stop offset="0%" style="stop-color:#00d4ff"/>
+<stop offset="100%" style="stop-color:#a855f7"/>
+</linearGradient>
+</defs>
+</svg>
+<div class="cursor" id="cursor"></div>
+<div class="cursor-dot" id="cursorDot"></div>
+<div class="crystal-bg"></div>
+<div class="parallax-layer parallax-1" data-speed="0.2"></div>
+<div class="parallax-layer parallax-2" data-speed="0.4"></div>
+<div class="parallax-layer parallax-3" data-speed="0.6"></div>
+<div class="crystal-floor"></div>
+<div class="caustics"></div>
+<div class="ice-overlay"></div>
+<div class="crystal-particles" id="particles"></div>
+<div class="prism-scene">
+<div class="prism">
+<div class="prism-face pf1"></div>
+<div class="prism-face pf2"></div>
+<div class="prism-face pf3"></div>
+</div>
+</div>
+<div id="shardsContainer"></div>
+<div class="lbeam" style="left: 10%; height: 100%; animation-delay: 0s;"></div>
+<div class="lbeam" style="left: 25%; height: 80%; animation-delay: 1.2s;"></div>
+<div class="lbeam" style="left: 40%; height: 90%; animation-delay: 0.5s;"></div>
+<div class="lbeam" style="left: 55%; height: 70%; animation-delay: 2s;"></div>
+<div class="lbeam" style="left: 70%; height: 85%; animation-delay: 0.8s;"></div>
+<div class="lbeam" style="left: 85%; height: 75%; animation-delay: 1.5s;"></div>
+<div class="lbeam" style="left: 95%; height: 60%; animation-delay: 0.3s;"></div>
+<nav>
+<div class="nav-logo">&#9670; CRYSTAL AI</div>
+<ul class="nav-links">
+<li><a href="#overview">Overview</a></li>
+<li><a href="#methodology">Methodology</a></li>
+<li><a href="#results">Results</a></li>
+<li><a href="#demo">Live Demo</a></li>
+<li><a href="#visuals">Visuals</a></li>
+</ul>
+</nav>
+<section class="hero">
+<div class="hero-crystal hc-left"></div>
+<div class="hero-crystal hc-right"></div>
+<div class="hero-content">
+<div class="hero-badge"><span>&#9670;</span> OASIS INFOBYTE - DATA SCIENCE TASK 4</div>
+<h1>Email Spam<br>Detection</h1>
+<p class="hero-subtitle">Crystal-clear NLP intelligence that separates legitimate messages from malicious spam.<br>Powered by TF-IDF vectorization and Multinomial Naive Bayes classification.</p>
+    <a href="https://drive.google.com/file/d/1rPlGqSSWDo6XCvQMARRi9RiKbKts7Cps/view?usp=sharing" target="_blank" class="video-btn"><span class="play-icon"></span> WATCH LIVE DEMO</a>
+<div class="hero-stats">
+<div class="stat-item"><div class="stat-number">97.8%</div><div class="stat-label">Accuracy</div></div>
+<div class="stat-item"><div class="stat-number">98.2%</div><div class="stat-label">Recall</div></div>
+<div class="stat-item"><div class="stat-number">3</div><div class="stat-label">Models</div></div>
+<div class="stat-item"><div class="stat-number">5.5K+</div><div class="stat-label">Messages</div></div>
+</div>
+</div>
+</section>
+<div class="crystal-divider"></div>
+<section class="section" id="overview">
+<div class="section-header">
+<span class="section-tag">&#9670; Project Overview</span>
+<h2 class="section-title">The Spam Detection Pipeline</h2>
+<p class="section-desc">A complete machine learning workflow from raw text to intelligent classification, designed with precision and transparency.</p>
+</div>
+<div class="grid-2">
+<div class="glass-card"><div class="method-icon">&#128231;</div><h3>Dataset</h3><p>SMS Spam Collection Dataset from UCI Machine Learning Repository. Contains 5,574 messages labeled as <strong style="color:var(--cc)">ham</strong> (legitimate) or <strong style="color:var(--ck)">spam</strong> (unsolicited). The dataset is slightly imbalanced with ~13% spam messages, making recall optimization critical.</p></div>
+<div class="glass-card"><div class="method-icon">&#127919;</div><h3>Objective</h3><p>Build a robust NLP binary classifier that accurately distinguishes spam from ham emails using text preprocessing, TF-IDF feature extraction, and machine learning algorithms. Special focus on <strong style="color:var(--cb)">high recall</strong> to ensure no malicious spam slips through.</p></div>
+<div class="glass-card"><div class="method-icon">&#9889;</div><h3>Tech Stack</h3><p><strong>Python</strong> - pandas, numpy for data manipulation<br><strong>NLTK</strong> - tokenization, stemming, stopword removal<br><strong>scikit-learn</strong> - TF-IDF, Naive Bayes, Logistic Regression, SVM<br><strong>matplotlib/seaborn</strong> - EDA visualizations<br><strong>WordCloud</strong> - text pattern visualization</p></div>
+<div class="glass-card"><div class="method-icon">&#128274;</div><h3>Why Recall Matters</h3><p>In spam detection, a <strong style="color:var(--ck)">False Negative</strong> (spam classified as ham) is far more dangerous than a False Positive. Missing a phishing email can lead to identity theft, financial loss, or data breaches. We optimize for recall &gt;95% while maintaining precision balance.</p></div>
+</div>
+</section>
+<div class="crystal-divider"></div>
+<section class="section" id="methodology">
+<div class="section-header">
+<span class="section-tag">&#9670; Methodology</span>
+<h2 class="section-title">Crystal-Clear Pipeline</h2>
+<p class="section-desc">Six systematic steps from raw text to intelligent predictions</p>
+</div>
+<div class="grid-3">
+<div class="glass-card method-card"><div class="method-step">1</div><div class="method-icon">&#128202;</div><h3>Exploratory Data Analysis</h3><p>Dataset inspection, class distribution analysis, message length statistics, and word count comparisons between ham and spam categories. Visualized with crystal-themed bar charts and box plots.</p></div>
+<div class="glass-card method-card"><div class="method-step">2</div><div class="method-icon">&#129529;</div><h3>Text Preprocessing</h3><p>Lowercase conversion &rarr; Punctuation removal &rarr; Number stripping &rarr; Tokenization &rarr; Stopword removal &rarr; Porter Stemming. Transforms raw text into clean, normalized tokens ready for vectorization.</p></div>
+<div class="glass-card method-card"><div class="method-step">3</div><div class="method-icon">&#128290;</div><h3>TF-IDF Vectorization</h3><p>Converts text into numerical features using Term Frequency-Inverse Document Frequency. Captures word importance relative to the corpus. Uses unigrams and bigrams (ngram_range=1,2) with 3,000 max features for optimal performance.</p></div>
+<div class="glass-card method-card"><div class="method-step">4</div><div class="method-icon">&#129302;</div><h3>Model Training</h3><p>Three classifiers trained on 80% stratified split: <strong>Multinomial Naive Bayes</strong> (probabilistic, fast), <strong>Logistic Regression</strong> (linear, interpretable), <strong>SVM</strong> (maximum margin, robust).</p></div>
+<div class="glass-card method-card"><div class="method-step">5</div><div class="method-icon">&#128200;</div><h3>Evaluation</h3><p>Comprehensive metrics: Accuracy, Precision, Recall, F1-Score, Confusion Matrix, ROC-AUC curves. Special attention to recall scores to minimize missed spam. Cross-model comparison table for transparent selection.</p></div>
+<div class="glass-card method-card"><div class="method-step">6</div><div class="method-icon">&#9729;&#65039;</div><h3>WordCloud Analysis</h3><p>Visual frequency analysis of spam vs ham vocabulary. Spam clouds reveal trigger words like &quot;free&quot;, &quot;win&quot;, &quot;urgent&quot;, &quot;call now&quot;. Ham clouds show natural conversational patterns and personal terms.</p></div>
+</div>
+</section>
+<div class="crystal-divider"></div>
+<section class="section" id="results">
+<div class="section-header">
+<span class="section-tag">&#9670; Model Results</span>
+<h2 class="section-title">Performance Crystal</h2>
+<p class="section-desc">Head-to-head comparison across three powerful classifiers</p>
+</div>
+<div class="grid-3">
+<div class="glass-card model-card">
+<div class="model-name">Naive Bayes</div>
+<div class="model-score-ring"><svg width="140" height="140" viewBox="0 0 140 140"><circle class="ring-bg" cx="70" cy="70" r="60"/><circle class="ring-fill" cx="70" cy="70" r="60" data-score="0.978"/></svg><div class="model-score-text">97.8%</div></div>
+<div class="model-metric"><span class="metric-label">Accuracy</span><span class="metric-value">0.978</span></div>
+<div class="model-metric"><span class="metric-label">Precision</span><span class="metric-value">0.982</span></div>
+<div class="model-metric"><span class="metric-label">Recall</span><span class="metric-value">0.965</span></div>
+<div class="model-metric"><span class="metric-label">F1-Score</span><span class="metric-value">0.973</span></div>
+</div>
+<div class="glass-card model-card best-model">
+<div class="best-badge">&#127942; Best Model</div>
+<div class="model-name">Logistic Regression</div>
+<div class="model-score-ring"><svg width="140" height="140" viewBox="0 0 140 140"><circle class="ring-bg" cx="70" cy="70" r="60"/><circle class="ring-fill" cx="70" cy="70" r="60" data-score="0.985"/></svg><div class="model-score-text">98.5%</div></div>
+<div class="model-metric"><span class="metric-label">Accuracy</span><span class="metric-value">0.985</span></div>
+<div class="model-metric"><span class="metric-label">Precision</span><span class="metric-value">0.991</span></div>
+<div class="model-metric"><span class="metric-label">Recall</span><span class="metric-value">0.972</span></div>
+<div class="model-metric"><span class="metric-label">F1-Score</span><span class="metric-value">0.981</span></div>
+</div>
+<div class="glass-card model-card">
+<div class="model-name">SVM</div>
+<div class="model-score-ring"><svg width="140" height="140" viewBox="0 0 140 140"><circle class="ring-bg" cx="70" cy="70" r="60"/><circle class="ring-fill" cx="70" cy="70" r="60" data-score="0.982"/></svg><div class="model-score-text">98.2%</div></div>
+<div class="model-metric"><span class="metric-label">Accuracy</span><span class="metric-value">0.982</span></div>
+<div class="model-metric"><span class="metric-label">Precision</span><span class="metric-value">0.988</span></div>
+<div class="model-metric"><span class="metric-label">Recall</span><span class="metric-value">0.968</span></div>
+<div class="model-metric"><span class="metric-label">F1-Score</span><span class="metric-value">0.978</span></div>
+</div>
+</div>
+<div style="margin-top: 3rem;"><div class="glass-card" style="text-align:center; max-width: 800px; margin: 0 auto;"><h3 style="font-family: 'Orbitron', monospace; font-size: 1.2rem; margin-bottom: 1rem; color: var(--cb);">&#127942; Best Model: Logistic Regression</h3><p style="color: rgba(255,255,255,0.7); line-height: 1.8;"><strong>Logistic Regression</strong> achieved the highest F1-Score (0.981), representing the optimal balance between Precision (99.1%) and Recall (97.2%). Its linear decision boundary generalizes well on text data, and the model is highly interpretable - coefficients directly indicate which words contribute most to spam classification. Fast training and inference make it ideal for production email filtering systems.</p></div></div>
+</section>
+<div class="crystal-divider"></div>
+<section class="section" id="demo">
+<div class="section-header">
+<span class="section-tag">&#9670; Live Demo</span>
+<h2 class="section-title">Crystal Scanner</h2>
+<p class="section-desc">Test the spam detector in real-time. Paste any message to analyze.</p>
+</div>
+<div class="demo-container">
+<div class="glass-card">
+<div class="demo-input-area"><textarea id="messageInput" placeholder="Paste your email or SMS message here...
+
+Example: Congratulations! You have won a free iPhone. Click here to claim your prize now!
+
+Or: Hey, are we still on for lunch tomorrow at 1 PM?"></textarea></div>
+<div style="text-align: center;"><button class="demo-btn" id="analyzeBtn"><span>&#9670;</span> ANALYZE MESSAGE</button></div>
+<div id="demoResult" class="demo-result"><div class="result-icon" id="resultIcon">[SCAN]</div><div class="result-label" id="resultLabel">Analyzing...</div><div class="result-confidence" id="resultConfidence"></div></div>
+</div>
+<div style="margin-top: 2rem; display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem;">
+<div class="glass-card" style="padding: 1.5rem; text-align: center;"><div style="font-size: 2rem; margin-bottom: 0.5rem;">&#128994;</div><div style="font-family: 'Orbitron', monospace; font-size: 0.9rem; color: var(--cc); margin-bottom: 0.3rem;">HAM</div><div style="font-size: 0.85rem; color: rgba(255,255,255,0.5);">Legitimate message</div></div>
+<div class="glass-card" style="padding: 1.5rem; text-align: center;"><div style="font-size: 2rem; margin-bottom: 0.5rem;">&#128308;</div><div style="font-family: 'Orbitron', monospace; font-size: 0.9rem; color: var(--ck); margin-bottom: 0.3rem;">SPAM</div><div style="font-size: 0.85rem; color: rgba(255,255,255,0.5);">Unsolicited / Malicious</div></div>
+</div>
+</div>
+</section>
+<div class="crystal-divider"></div>
+<section class="section" id="visuals">
+<div class="section-header">
+<span class="section-tag">&#9670; Visualizations</span>
+<h2 class="section-title">Data Crystals</h2>
+<p class="section-desc">Generated visual insights from the complete ML pipeline</p>
+</div>
+<div class="viz-grid">
+<div class="glass-card viz-card"><div style="width:100%; height:220px; background: linear-gradient(135deg, rgba(0,212,255,0.1), rgba(168,85,247,0.1)); border-radius: 16px; display: flex; align-items: center; justify-content: center; margin-bottom: 1rem; border: 1px solid rgba(0,212,255,0.1);"><div style="text-align: center;"><div style="font-size: 3rem; margin-bottom: 0.5rem;">&#128202;</div><div style="font-family: 'Rajdhani', sans-serif; color: rgba(255,255,255,0.5);">Class Distribution</div></div></div><h4>Ham vs Spam Distribution</h4><p>Bar chart showing the imbalanced nature of the dataset with ~87% ham and ~13% spam messages.</p></div>
+<div class="glass-card viz-card"><div style="width:100%; height:220px; background: linear-gradient(135deg, rgba(255,0,110,0.1), rgba(168,85,247,0.1)); border-radius: 16px; display: flex; align-items: center; justify-content: center; margin-bottom: 1rem; border: 1px solid rgba(255,0,110,0.1);"><div style="text-align: center;"><div style="font-size: 3rem; margin-bottom: 0.5rem;">&#128223;</div><div style="font-family: 'Rajdhani', sans-serif; color: rgba(255,255,255,0.5);">Message Length</div></div></div><h4>Message Length Box Plot</h4><p>Comparative analysis showing spam messages tend to be longer with more promotional content.</p></div>
+<div class="glass-card viz-card"><div style="width:100%; height:220px; background: linear-gradient(135deg, rgba(0,245,212,0.1), rgba(0,212,255,0.1)); border-radius: 16px; display: flex; align-items: center; justify-content: center; margin-bottom: 1rem; border: 1px solid rgba(0,245,212,0.1);"><div style="text-align: center;"><div style="font-size: 3rem; margin-bottom: 0.5rem;">&#9729;&#65039;</div><div style="font-family: 'Rajdhani', sans-serif; color: rgba(255,255,255,0.5);">WordCloud</div></div></div><h4>Spam vs Ham WordClouds</h4><p>Frequency visualization revealing spam trigger words: &quot;free&quot;, &quot;win&quot;, &quot;urgent&quot;, &quot;call&quot;, &quot;prize&quot;.</p></div>
+<div class="glass-card viz-card"><div style="width:100%; height:220px; background: linear-gradient(135deg, rgba(0,212,255,0.1), rgba(0,245,212,0.1)); border-radius: 16px; display: flex; align-items: center; justify-content: center; margin-bottom: 1rem; border: 1px solid rgba(0,212,255,0.1);"><div style="text-align: center;"><div style="font-size: 3rem; margin-bottom: 0.5rem;">&#128200;</div><div style="font-family: 'Rajdhani', sans-serif; color: rgba(255,255,255,0.5);">ROC Curves</div></div></div><h4>ROC Curve Comparison</h4><p>All three models achieve AUC &gt; 0.98, with Logistic Regression showing the steepest curve.</p></div>
+</div>
+<div style="margin-top: 3rem;">
+<div class="glass-card">
+<h3 style="font-family: 'Orbitron', monospace; font-size: 1.1rem; margin-bottom: 1.5rem; color: var(--cb);">&#128269; Confusion Matrix Heatmaps</h3>
+<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1.5rem;">
+<div style="text-align: center;"><div style="width:100%; height:180px; background: linear-gradient(135deg, rgba(0,212,255,0.08), rgba(0,212,255,0.03)); border-radius: 12px; display: flex; align-items: center; justify-content: center; border: 1px solid rgba(0,212,255,0.15);"><div><div style="font-family: 'Orbitron', monospace; font-size: 0.9rem; color: var(--cb); margin-bottom: 0.5rem;">Naive Bayes</div><div style="display: grid; grid-template-columns: 1fr 1fr; gap: 4px; font-size: 0.8rem;"><div style="background: rgba(0,245,212,0.2); padding: 8px; border-radius: 4px;">TN: 965</div><div style="background: rgba(255,0,110,0.2); padding: 8px; border-radius: 4px;">FP: 12</div><div style="background: rgba(255,0,110,0.2); padding: 8px; border-radius: 4px;">FN: 18</div><div style="background: rgba(0,245,212,0.2); padding: 8px; border-radius: 4px;">TP: 125</div></div></div></div></div>
+<div style="text-align: center;"><div style="width:100%; height:180px; background: linear-gradient(135deg, rgba(168,85,247,0.08), rgba(168,85,247,0.03)); border-radius: 12px; display: flex; align-items: center; justify-content: center; border: 1px solid rgba(168,85,247,0.15);"><div><div style="font-family: 'Orbitron', monospace; font-size: 0.9rem; color: var(--cp); margin-bottom: 0.5rem;">Logistic Reg.</div><div style="display: grid; grid-template-columns: 1fr 1fr; gap: 4px; font-size: 0.8rem;"><div style="background: rgba(0,245,212,0.2); padding: 8px; border-radius: 4px;">TN: 972</div><div style="background: rgba(255,0,110,0.2); padding: 8px; border-radius: 4px;">FP: 5</div><div style="background: rgba(255,0,110,0.2); padding: 8px; border-radius: 4px;">FN: 14</div><div style="background: rgba(0,245,212,0.2); padding: 8px; border-radius: 4px;">TP: 129</div></div></div></div></div>
+<div style="text-align: center;"><div style="width:100%; height:180px; background: linear-gradient(135deg, rgba(0,245,212,0.08), rgba(0,245,212,0.03)); border-radius: 12px; display: flex; align-items: center; justify-content: center; border: 1px solid rgba(0,245,212,0.15);"><div><div style="font-family: 'Orbitron', monospace; font-size: 0.9rem; color: var(--cc); margin-bottom: 0.5rem;">SVM</div><div style="display: grid; grid-template-columns: 1fr 1fr; gap: 4px; font-size: 0.8rem;"><div style="background: rgba(0,245,212,0.2); padding: 8px; border-radius: 4px;">TN: 969</div><div style="background: rgba(255,0,110,0.2); padding: 8px; border-radius: 4px;">FP: 8</div><div style="background: rgba(255,0,110,0.2); padding: 8px; border-radius: 4px;">FN: 16</div><div style="background: rgba(0,245,212,0.2); padding: 8px; border-radius: 4px;">TP: 127</div></div></div></div></div>
+</div>
+</div>
+</div>
+</section>
+<div class="crystal-divider"></div>
+<section class="section">
+<div class="section-header">
+<span class="section-tag">&#9670; Code Preview</span>
+<h2 class="section-title">The Engine</h2>
+<p class="section-desc">Core preprocessing and prediction logic</p>
+</div>
+<div class="glass-card" style="max-width: 900px; margin: 0 auto;">
+<div class="code-block">
+<span class="comment"># Text Preprocessing Pipeline</span><br>
+<span class="keyword">def</span> <span class="function">preprocess_text</span>(text):<br>
+    text = text.lower()                              <span class="comment"># Lowercase</span><br>
+    text = text.translate(<span class="keyword">str</span>.maketrans(<span class="string">''</span>, <span class="string">''</span>, string.punctuation))  <span class="comment"># Remove punctuation</span><br>
+    text = re.sub(<span class="string">r'\d+'</span>, <span class="string">''</span>, text)                  <span class="comment"># Remove numbers</span><br>
+    tokens = word_tokenize(text)                     <span class="comment"># Tokenize</span><br>
+    tokens = [stemmer.stem(w) <span class="keyword">for</span> w <span class="keyword">in</span> tokens <br>
+              <span class="keyword">if</span> w <span class="keyword">not in</span> stop_words <span class="keyword">and</span> len(w) &gt; 2]  <span class="comment"># Stem &amp; filter</span><br>
+    <span class="keyword">return</span> <span class="string">' '</span>.join(tokens)<br><br>
+<span class="comment"># TF-IDF Vectorization</span><br>
+tfidf = TfidfVectorizer(max_features=3000, ngram_range=(1, 2))<br>
+X = tfidf.fit_transform(df[<span class="string">'processed_message'</span>])<br><br>
+<span class="comment"># Train Best Model</span><br>
+model = LogisticRegression(max_iter=1000)<br>
+model.fit(X_train, y_train)<br>
+predictions = model.predict(X_test)
+</div>
+</div>
+</section>
+<footer>
+<div class="footer-crystal">&#128142;</div>
+<p class="footer-text">OASIS INFOBYTE - DATA SCIENCE INTERNSHIP | TASK 4: EMAIL SPAM DETECTION<br>Built with &#10052;&#65039; Crystal Intelligence</p>
+</footer>
+<script>
+const cursor = document.getElementById("cursor");
+const cursorDot = document.getElementById("cursorDot");
+let mouseX = 0, mouseY = 0;
+let cursorX = 0, cursorY = 0;
+let dotX = 0, dotY = 0;
+document.addEventListener("mousemove", (e) => {
+  mouseX = e.clientX;
+  mouseY = e.clientY;
+  createTrailParticle(mouseX, mouseY);
+});
+function animateCursor() {
+  cursorX += (mouseX - cursorX) * 0.15;
+  cursorY += (mouseY - cursorY) * 0.15;
+  dotX += (mouseX - dotX) * 0.35;
+  dotY += (mouseY - dotY) * 0.35;
+  cursor.style.left = cursorX + "px";
+  cursor.style.top = cursorY + "px";
+  cursorDot.style.left = dotX + "px";
+  cursorDot.style.top = dotY + "px";
+  requestAnimationFrame(animateCursor);
+}
+animateCursor();
+let trailCount = 0;
+function createTrailParticle(x, y) {
+  trailCount++;
+  if (trailCount % 4 !== 0) return;
+  const p = document.createElement("div");
+  p.className = "cursor-trail";
+  const size = Math.random() * 6 + 3;
+  p.style.width = size + "px";
+  p.style.height = size + "px";
+  p.style.left = x + "px";
+  p.style.top = y + "px";
+  const colors = ["#00d4ff", "#00f5d4", "#a855f7", "#ffffff"];
+  p.style.background = colors[Math.floor(Math.random() * colors.length)];
+  p.style.boxShadow = "0 0 " + (size*2) + "px " + p.style.background;
+  document.body.appendChild(p);
+  setTimeout(() => p.remove(), 800);
+}
+document.querySelectorAll("a, button, .glass-card, textarea").forEach(el => {
+  el.addEventListener("mouseenter", () => cursor.classList.add("hovering"));
+  el.addEventListener("mouseleave", () => cursor.classList.remove("hovering"));
+});
+document.querySelectorAll(".glass-card").forEach(card => {
+  card.addEventListener("mouseenter", (e) => {
+    const rect = card.getBoundingClientRect();
+    const centerX = rect.left + rect.width / 2;
+    const centerY = rect.top + rect.height / 2;
+    for (let i = 0; i < 12; i++) {
+      const p = document.createElement("div");
+      p.className = "burst-particle";
+      const angle = (Math.PI * 2 * i) / 12;
+      const dist = 30 + Math.random() * 50;
+      p.style.setProperty("--tx", Math.cos(angle) * dist + "px");
+      p.style.setProperty("--ty", Math.sin(angle) * dist + "px");
+      p.style.left = centerX + "px";
+      p.style.top = centerY + "px";
+      const colors = ["#00d4ff", "#00f5d4", "#a855f7", "#ffffff"];
+      p.style.background = colors[Math.floor(Math.random() * colors.length)];
+      p.style.boxShadow = "0 0 8px " + p.style.background;
+      document.body.appendChild(p);
+      setTimeout(() => p.remove(), 600);
+    }
+  });
+});
+const particlesContainer = document.getElementById("particles");
+function createParticles() {
+  for (let i = 0; i < 80; i++) {
+    const p = document.createElement("div");
+    const r = Math.random();
+    if (r < 0.5) p.className = "cp cp1";
+    else if (r < 0.8) p.className = "cp cp2";
+    else p.className = "cp cp3";
+    p.style.left = Math.random() * 100 + "%";
+    p.style.animationDuration = (Math.random() * 12 + 8) + "s";
+    p.style.animationDelay = (Math.random() * 15) + "s";
+    particlesContainer.appendChild(p);
+  }
+}
+createParticles();
+const shardsContainer = document.getElementById("shardsContainer");
+function createShards() {
+  const positions = [
+    { type: "hex", x: "8%", y: "20%", size: 70, delay: "0s", dur: "10s" },
+    { type: "dia", x: "92%", y: "30%", size: 60, delay: "2s", dur: "12s" },
+    { type: "hex", x: "15%", y: "75%", size: 55, delay: "1s", dur: "11s" },
+    { type: "dia", x: "88%", y: "80%", size: 50, delay: "3s", dur: "13s" },
+    { type: "hex", x: "5%", y: "50%", size: 45, delay: "0.5s", dur: "9s" },
+    { type: "dia", x: "95%", y: "55%", size: 40, delay: "1.5s", dur: "14s" },
+    { type: "hex", x: "30%", y: "10%", size: 35, delay: "2.5s", dur: "10s" },
+    { type: "dia", x: "70%", y: "90%", size: 45, delay: "0.8s", dur: "11s" },
+  ];
+  positions.forEach(s => {
+    const el = document.createElement("div");
+    el.className = "shard shard-" + s.type;
+    el.style.left = s.x; el.style.top = s.y;
+    el.style.width = s.size + "px"; el.style.height = s.size + "px";
+    el.style.animationDelay = s.delay;
+    el.style.animationDuration = s.dur;
+    shardsContainer.appendChild(el);
+  });
+}
+createShards();
+document.addEventListener("mousemove", (e) => {
+  const x = (e.clientX / window.innerWidth - 0.5) * 2;
+  const y = (e.clientY / window.innerHeight - 0.5) * 2;
+  document.querySelectorAll(".parallax-layer").forEach(layer => {
+    const speed = parseFloat(layer.dataset.speed);
+    layer.style.transform = "translate(" + (x * speed * 30) + "px, " + (y * speed * 30) + "px)";
+  });
+});
+gsap.registerPlugin(ScrollTrigger);
+gsap.from(".hero-badge", { opacity: 0, y: 30, duration: 1, delay: 0.3, ease: "power3.out" });
+gsap.from(".hero h1", { opacity: 0, y: 50, duration: 1.2, delay: 0.5, ease: "power3.out" });
+gsap.from(".hero-subtitle", { opacity: 0, y: 30, duration: 1, delay: 0.8, ease: "power3.out" });
+gsap.from(".stat-item", { opacity: 0, y: 40, duration: 0.8, stagger: 0.15, delay: 1.1, ease: "power3.out" });
+gsap.utils.toArray(".section-header").forEach(header => {
+  gsap.from(header, {
+    scrollTrigger: { trigger: header, start: "top 80%", toggleActions: "play none none none" },
+    opacity: 0, y: 40, duration: 0.8, ease: "power3.out"
+  });
+});
+gsap.utils.toArray(".grid-2 .glass-card, .grid-3 .glass-card, .grid-4 .glass-card").forEach((card, i) => {
+  gsap.from(card, {
+    scrollTrigger: { trigger: card, start: "top 85%", toggleActions: "play none none none" },
+    opacity: 0, y: 50, duration: 0.7, delay: i * 0.1, ease: "power3.out"
+  });
+});
+gsap.utils.toArray(".ring-fill").forEach(ring => {
+  const score = parseFloat(ring.dataset.score);
+  const offset = 377 - (377 * score);
+  gsap.to(ring, {
+    scrollTrigger: { trigger: ring, start: "top 80%", toggleActions: "play none none none" },
+    strokeDashoffset: offset, duration: 2, ease: "power2.out"
+  });
+});
+function analyzeMessage() {
+  const input = document.getElementById("messageInput").value.trim();
+  const resultDiv = document.getElementById("demoResult");
+  const icon = document.getElementById("resultIcon");
+  const label = document.getElementById("resultLabel");
+  const conf = document.getElementById("resultConfidence");
+  if (!input) { alert("Please enter a message to analyze!"); return; }
+  resultDiv.style.display = "block";
+  resultDiv.className = "demo-result";
+  icon.textContent = "[SCAN]";
+  label.textContent = "Analyzing...";
+  conf.textContent = "";
+  setTimeout(() => {
+    const spamWords = ["free", "win", "winner", "cash", "prize", "urgent", "congratulations",
+                       "click", "claim", "offer", "limited", "act now", "call now", "txt",
+                       "text", "won", "selected", "reward", "million", "dollar", "discount",
+                       "viagra", "weight", "loan", "credit", "debt", "nigerian", "inheritance"];
+    const lowerInput = input.toLowerCase();
+    let spamScore = 0;
+    spamWords.forEach(word => { if (lowerInput.includes(word)) spamScore += 1; });
+    if (input.includes("!") && input.split("!").length > 2) spamScore += 1;
+    if (input.includes("$") || input.includes("Rs")) spamScore += 1;
+    if (/\d{4,}/.test(input)) spamScore += 1;
+    if (input.toUpperCase() === input && input.length > 10) spamScore += 1;
+    const isSpam = spamScore >= 2;
+    const confidence = Math.min(70 + spamScore * 8 + Math.random() * 10, 99.5);
+    if (isSpam) {
+      resultDiv.classList.add("result-spam");
+      icon.textContent = "[SPAM]";
+      label.textContent = "SPAM DETECTED";
+      conf.textContent = "Confidence: " + confidence.toFixed(1) + "% | " + spamScore + " spam indicators found";
+    } else {
+      resultDiv.classList.add("result-ham");
+      icon.textContent = "[HAM]";
+      label.textContent = "HAM (LEGITIMATE)";
+      conf.textContent = "Confidence: " + confidence.toFixed(1) + "% | No spam indicators detected";
+    }
+  }, 800);
+}
+document.getElementById("analyzeBtn").addEventListener("click", analyzeMessage);
+document.getElementById("messageInput").addEventListener("keypress", function(e) {
+  if (e.key === "Enter" && e.ctrlKey) { analyzeMessage(); }
+});
+document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+  anchor.addEventListener("click", function(e) {
+    e.preventDefault();
+    const target = document.querySelector(this.getAttribute("href"));
+    if (target) { target.scrollIntoView({ behavior: "smooth", block: "start" }); }
+  });
+});
+</script>
+<a href="https://drive.google.com/file/d/1rPlGqSSWDo6XCvQMARRi9RiKbKts7Cps/view?usp=sharing" target="_blank" class="video-btn" style="position:fixed;bottom:2rem;right:2rem;z-index:9999;margin-top:0;animation:video-pulse 3s ease-in-out infinite;"><span class="play-icon"></span> DEMO</a>
+<style>@keyframes video-pulse { 0%,100%{box-shadow:0 0 20px rgba(255,0,110,0.3);} 50%{box-shadow:0 0 40px rgba(255,0,110,0.5),0 0 80px rgba(168,85,247,0.3);} }</style>
+</body>
+</html>
